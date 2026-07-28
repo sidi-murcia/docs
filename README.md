@@ -1,6 +1,6 @@
 # SIDI - Documentación del Sistema
 
-Este repositorio centraliza la ingeniería de requisitos, el modelado y el diseño de arquitectura del **Sistema de Difusión Sindical (SIDI)**. 
+Este repositorio centraliza la ingeniería de requisitos, el modelado y el diseño de arquitectura del **Sistema de Difusión Sindical (SIDI)**.
 
 Toda la documentación se rige por las disciplinas del **Proceso Unificado**, adaptándose a una estructura simplificada bajo el enfoque de documentación como código (*Docs-as-Code*).
 
@@ -21,6 +21,6 @@ El árbol de directorios se divide estrictamente en dos grandes bloques:
 
 ## 🔗 Enlaces a Componentes de Software
 
-* [`sidi-murcia/backend`](https://github.com/sidi-murcia/backend) - Lógica de servidor y servicios.
+* [`sidi-murcia/backend`](https://github.com/sidi-murcia/backend) - Lógica de servidor.
 * [`sidi-murcia/web`](https://github.com/sidi-murcia/web) - Panel de administración web.
 * [`sidi-murcia/app`](https://github.com/sidi-murcia/app) - Aplicación móvil para afiliados.

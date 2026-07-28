@@ -22,5 +22,5 @@ El árbol de directorios se divide estrictamente en dos grandes bloques:
 ## 🔗 Enlaces a Componentes de Software
 
 * [`sidi-murcia/backend`](https://github.com/sidi-murcia/backend) - Lógica de servidor y servicios.
-* [`sidi-murcia/admin-web`](https://github.com/sidi-murcia/-web) - Panel de administración web.
+* [`sidi-murcia/web`](https://github.com/sidi-murcia/web) - Panel de administración web.
 * [`sidi-murcia/app`](https://github.com/sidi-murcia/app) - Aplicación móvil para afiliados.

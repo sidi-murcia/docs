@@ -4,11 +4,11 @@ info:
   title: SIDI API
   version: 1.0.0
   description: |
-    API del Sistema de Difusión de Información del Sindicato (SIDI).
+    API del Sistema de Difusión Sindical.
 
     Expone dos superficies diferenciadas:
     - `/admin/*` — Panel de Administración (rol `admin`)
-    - `/movil/*` — Aplicación Móvil de afiliados (rol `afiliado`)
+    - `/affiliates/*` — Aplicación Móvil de afiliados (rol `affiliate`)
 
     Toda comunicación debe realizarse sobre HTTPS (RI-COM-01).
     Los mensajes de error de autenticación son siempre genéricos para no
@@ -18,38 +18,40 @@ servers:
   - url: https://api.sidi.es/api/v1
     description: Producción
   - url: https://staging.api.sidi.es/api/v1
-    description: Staging
+    description: Staging / Preproducción
 
 tags:
-  - name: Autenticación
+  - name: Auth
     description: Inicio y cierre de sesión para administradores y afiliados
-  - name: Admin › Dashboard
+  - name: Admin > Metrics
     description: Métricas y estadísticas (CDU-AD02)
-  - name: Admin › Afiliados
+  - name: Admin > Affiliates
     description: Importación del censo de afiliados (CDU-AD03)
-  - name: Admin › Canales
+  - name: Admin > Channels
     description: CRUD de canales de comunicación (CDU-AD04)
-  - name: Admin › Comunicados
+  - name: Admin > Announcements
     description: Emisión, edición y eliminación de comunicados (CDU-AD05, CDU-AD06)
-  - name: Móvil › Canales
+  - name: Affiliates > Channels
     description: Consulta y gestión de suscripciones a canales (CDU-AF02)
-  - name: Móvil › Comunicados
-    description: Sincronización delta de comunicados (CDU-AF03)
-  - name: Móvil › Dispositivo
+  - name: Affiliates > Announcements
+    description: Sincronización delta de comunicados y consulta individual (CDU-AF03)
+  - name: Affiliates > Devices
     description: Actualización del token FCM del dispositivo
+  - name: Affiliates > Profile
+    description: Gestión de datos del afiliado autenticado
 
 # ---------------------------------------------------------------------------
 # PATHS
 # ---------------------------------------------------------------------------
 paths:
 
-  # ── Autenticación ─────────────────────────────────────────────────────────
+  # ── Admin > Sessions ──────────────────────────────────────────────────────
 
-  /auth/admin/sesion:
+  /admin/sessions:
     post:
-      operationId: loginAdmin
+      operationId: createAdminSession
       summary: Iniciar sesión como administrador
-      tags: [Autenticación]
+      tags: [Auth]
       description: |
         Valida las credenciales (correo + contraseña) del administrador.
         Incrementa el contador de intentos fallidos en cada fallo;
@@ -59,32 +61,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginAdminRequest'
+              $ref: '#/components/schemas/AdminLoginRequest'
             example:
-              correo_electronico: admin@sidi.es
-              contrasena: "SuperS3creta!"
+              email: admin@sidi.es
+              password: "SuperS3creta!"
       responses:
         "200":
           description: Sesión iniciada
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SesionResponse'
+                $ref: '#/components/schemas/SessionResponse'
               example:
                 access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 token_type: bearer
-                expira_en: 900
+                expires_in: 900
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
-          $ref: '#/components/responses/CredencialesInvalidas'
+          $ref: '#/components/responses/InvalidCredentials'
         "423":
-          $ref: '#/components/responses/CuentaBloqueada'
+          $ref: '#/components/responses/AccountLocked'
 
+  /admin/sessions/current:
     delete:
-      operationId: logoutAdmin
+      operationId: deleteAdminSession
       summary: Cerrar sesión como administrador
-      tags: [Autenticación]
+      tags: [Auth]
       security:
         - BearerAdmin: []
       description: |
@@ -96,11 +99,13 @@ paths:
         "401":
           $ref: '#/components/responses/Unauthorized'
 
-  /auth/movil/sesion:
+  # ── Affiliates > Sessions ─────────────────────────────────────────────────
+
+  /affiliates/sessions:
     post:
-      operationId: loginMovil
+      operationId: createAffiliateSession
       summary: Iniciar sesión como afiliado desde la app móvil
-      tags: [Autenticación]
+      tags: [Auth]
       description: |
         Valida las credenciales (teléfono + correo) del afiliado y registra
         o actualiza el dispositivo vinculado a la cuenta (CDU-AF01).
@@ -108,7 +113,7 @@ paths:
         - Si el `device_uuid` no coincide con el registrado, se comprueba que
           hayan transcurrido ≥ 48 h desde `MOVIL.fecha_hora_vinculacion`
           (RF-AUTH-05). En caso contrario se devuelve `403` con
-          `permitido_desde`.
+          `permitted_from`.
         - Incrementa el contador de intentos fallidos en cada fallo;
           bloquea la cuenta 24 h tras 3 intentos consecutivos (RF-AUTH-03).
       requestBody:
@@ -116,31 +121,31 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginMovilRequest'
+              $ref: '#/components/schemas/AffiliateLoginRequest'
             example:
-              telefono: "612345678"
-              correo_electronico: afiliado@correo.es
+              phone: "612345678"
+              email: affiliate@correo.es
               device_uuid: "550e8400-e29b-41d4-a716-446655440000"
-              token_push: "fCM_token_abc123xyz"
+              push_token: "fCM_token_abc123xyz"
       responses:
         "200":
           description: Sesión iniciada
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SesionMovilResponse'
+                $ref: '#/components/schemas/AffiliateSessionResponse'
               example:
                 access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 token_type: bearer
-                expira_en: 900
-                afiliado:
+                expires_in: 900
+                affiliate:
                   id: 42
-                  nombre: "Ana García López"
-                  correo_electronico: afiliado@correo.es
+                  name: "Ana García López"
+                  email: affiliate@correo.es
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
-          $ref: '#/components/responses/CredencialesInvalidas'
+          $ref: '#/components/responses/InvalidCredentials'
         "403":
           description: |
             Cambio de dispositivo denegado — el periodo de carencia de 48 h
@@ -153,33 +158,34 @@ paths:
                 error:
                   code: DEVICE_CHANGE_COOLDOWN
                   message: "No puedes vincular un nuevo dispositivo hasta 2026-07-31T10:00:00Z"
-                  permitido_desde: "2026-07-31T10:00:00Z"
+                  permitted_from: "2026-07-31T10:00:00Z"
         "423":
-          $ref: '#/components/responses/CuentaBloqueada'
+          $ref: '#/components/responses/AccountLocked'
 
+  /affiliates/sessions/current:
     delete:
-      operationId: logoutMovil
+      operationId: deleteAffiliateSession
       summary: Cerrar sesión desde la app móvil
-      tags: [Autenticación]
+      tags: [Auth]
       security:
-        - BearerAfiliado: []
+        - BearerAffiliate: []
       description: |
         Invalida el token JWT y cancela la suscripción local del dispositivo
         a las notificaciones FCM (CDU-AF04). No elimina el `device_uuid` ni
-        el `token_push` del servidor (RF-AUTH-05: restricción de carencia).
+        el `push_token` del servidor (RF-AUTH-05: restricción de carencia).
       responses:
         "204":
           description: Sesión cerrada
         "401":
           $ref: '#/components/responses/Unauthorized'
 
-  # ── Admin › Dashboard ─────────────────────────────────────────────────────
+  # ── Admin > Metrics ───────────────────────────────────────────────────────
 
-  /admin/dashboard:
+  /admin/metrics/announcements:
     get:
-      operationId: getDashboard
-      summary: Obtener métricas del dashboard
-      tags: [Admin › Dashboard]
+      operationId: getAnnouncementMetrics
+      summary: Obtener métricas del dashboard de comunicados
+      tags: [Admin > Metrics]
       security:
         - BearerAdmin: []
       description: |
@@ -195,27 +201,27 @@ paths:
                 $ref: '#/components/schemas/DashboardResponse'
               example:
                 total_7d: 14
-                desglose_diario:
-                  - fecha: "2026-07-28"
-                    canales:
-                      - id_canal: 1
-                        nombre_canal: "Funcionarios Maestros"
+                daily_breakdown:
+                  - date: "2026-07-28"
+                    channels:
+                      - channel_id: 1
+                        channel_name: "Funcionarios Maestros"
                         total: 3
-                      - id_canal: 2
-                        nombre_canal: "Interinos Secundaria"
+                      - channel_id: 2
+                        channel_name: "Interinos Secundaria"
                         total: 1
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
           $ref: '#/components/responses/Forbidden'
 
-  # ── Admin › Afiliados ─────────────────────────────────────────────────────
+  # ── Admin > Affiliates ────────────────────────────────────────────────────
 
-  /admin/afiliados:
+  /admin/affiliates:
     get:
-      operationId: buscarAfiliados
+      operationId: searchAffiliates
       summary: Buscar afiliados para componer un grupo de envío
-      tags: [Admin › Afiliados]
+      tags: [Admin > Affiliates]
       security:
         - BearerAdmin: []
       description: |
@@ -223,7 +229,7 @@ paths:
         teléfono para seleccionarlos como destinatarios individuales
         (RF-ADM-10). No expone los resultados a usuarios afiliados.
       parameters:
-        - name: busqueda
+        - name: query
           in: query
           required: true
           schema:
@@ -250,7 +256,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AfiliadosBusquedaPage'
+                $ref: '#/components/schemas/AffiliateSearchPage'
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -258,11 +264,11 @@ paths:
         "403":
           $ref: '#/components/responses/Forbidden'
 
-  /admin/afiliados/censo:
+  /admin/affiliates/imports:
     post:
-      operationId: importarCenso
+      operationId: importAffiliateCensus
       summary: Importar censo de afiliados desde fichero
-      tags: [Admin › Afiliados]
+      tags: [Admin > Affiliates]
       security:
         - BearerAdmin: []
       description: |
@@ -281,9 +287,9 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [fichero]
+              required: [file]
               properties:
-                fichero:
+                file:
                   type: string
                   format: binary
                   description: Fichero `.xlsx` o `.csv` con el censo
@@ -293,11 +299,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultadoImportacion'
+                $ref: '#/components/schemas/ImportResult'
               example:
-                altas: 12
-                actualizaciones: 5
-                bajas: 3
+                created: 12
+                updated: 5
+                deleted: 3
         "400":
           description: Fichero inválido o columnas obligatorias ausentes
           content:
@@ -320,13 +326,13 @@ paths:
         "403":
           $ref: '#/components/responses/Forbidden'
 
-  # ── Admin › Canales ───────────────────────────────────────────────────────
+  # ── Admin > Channels ──────────────────────────────────────────────────────
 
-  /admin/canales:
+  /admin/channels:
     get:
-      operationId: listarCanalesAdmin
+      operationId: listAdminChannels
       summary: Listar todos los canales
-      tags: [Admin › Canales]
+      tags: [Admin > Channels]
       security:
         - BearerAdmin: []
       description: |
@@ -339,56 +345,56 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [canales]
+                required: [channels]
                 properties:
-                  canales:
+                  channels:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Canal'
+                      $ref: '#/components/schemas/Channel'
               example:
-                canales:
+                channels:
                   - id: 1
-                    nombre: "Funcionarios Maestros"
-                    topic_fcm: "funcionarios_maestros"
-                    activo: true
+                    name: "Funcionarios Maestros"
+                    fcm_topic: "funcionarios_maestros"
+                    active: true
                   - id: 2
-                    nombre: "Interinos Secundaria"
-                    topic_fcm: "interinos_secundaria"
-                    activo: true
+                    name: "Interinos Secundaria"
+                    fcm_topic: "interinos_secundaria"
+                    active: true
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
           $ref: '#/components/responses/Forbidden'
 
     post:
-      operationId: crearCanal
+      operationId: createChannel
       summary: Crear un nuevo canal
-      tags: [Admin › Canales]
+      tags: [Admin > Channels]
       security:
         - BearerAdmin: []
       description: |
-        Crea el canal y genera automáticamente su `topic_fcm` (nombre
+        Crea el canal y genera automáticamente su `fcm_topic` (nombre
         normalizado: minúsculas, tildes eliminadas, espacios → `_`).
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CanalCreateRequest'
+              $ref: '#/components/schemas/ChannelCreateRequest'
             example:
-              nombre: "Equipos Directivos Primaria"
+              name: "Equipos Directivos Primaria"
       responses:
         "201":
           description: Canal creado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Canal'
+                $ref: '#/components/schemas/Channel'
               example:
                 id: 8
-                nombre: "Equipos Directivos Primaria"
-                topic_fcm: "equipos_directivos_primaria"
-                activo: true
+                name: "Equipos Directivos Primaria"
+                fcm_topic: "equipos_directivos_primaria"
+                active: true
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -403,36 +409,36 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 error:
-                  code: CANAL_NOMBRE_DUPLICADO
+                  code: DUPLICATE_CHANNEL_NAME
                   message: "Ya existe un canal con el nombre 'Equipos Directivos Primaria'"
 
-  /admin/canales/{id}:
+  /admin/channels/{id}:
     parameters:
       - $ref: '#/components/parameters/IdPath'
     patch:
-      operationId: renombrarCanal
+      operationId: renameChannel
       summary: Renombrar un canal existente
-      tags: [Admin › Canales]
+      tags: [Admin > Channels]
       security:
         - BearerAdmin: []
       description: |
-        Actualiza el `nombre` del canal. El `topic_fcm` permanece inmutable
+        Actualiza el `name` del canal. El `fcm_topic` permanece inmutable
         para no invalidar las suscripciones FCM existentes.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CanalCreateRequest'
+              $ref: '#/components/schemas/ChannelCreateRequest'
             example:
-              nombre: "Funcionarios Primaria (actualizado)"
+              name: "Funcionarios Primaria (actualizado)"
       responses:
         "200":
           description: Canal actualizado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Canal'
+                $ref: '#/components/schemas/Channel'
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -449,13 +455,13 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
     delete:
-      operationId: eliminarCanal
+      operationId: deleteChannel
       summary: Eliminar un canal (borrado lógico)
-      tags: [Admin › Canales]
+      tags: [Admin > Channels]
       security:
         - BearerAdmin: []
       description: |
-        Marca el canal como `activo = false` y cancela en cascada todas las
+        Marca el canal como `active = false` y cancela en cascada todas las
         suscripciones activas de afiliados, desuscribiendo sus tokens FCM del
         topic correspondiente (CDU-AD04, flujo 3c).
       responses:
@@ -468,40 +474,40 @@ paths:
         "404":
           $ref: '#/components/responses/NotFound'
 
-  # ── Admin › Comunicados ───────────────────────────────────────────────────
+  # ── Admin > Announcements ─────────────────────────────────────────────────
 
-  /admin/comunicados:
+  /admin/announcements:
     get:
-      operationId: listarComunicadosAdmin
+      operationId: listAdminAnnouncements
       summary: Obtener historial de comunicados
-      tags: [Admin › Comunicados]
+      tags: [Admin > Announcements]
       security:
         - BearerAdmin: []
       description: |
         Devuelve el historial paginado de comunicados, incluyendo los marcados
         como eliminados. Soporta filtrado por fecha, título y canal (RF-ADM-07).
       parameters:
-        - name: desde
+        - name: from
           in: query
           schema:
             type: string
             format: date
-          description: "Filtro de fecha de inicio (fecha_hora_publicacion >= desde)"
+          description: "Filtro de fecha de inicio (published_at >= from)"
           example: "2026-07-01"
-        - name: hasta
+        - name: to
           in: query
           schema:
             type: string
             format: date
-          description: "Filtro de fecha de fin (fecha_hora_publicacion <= hasta)"
+          description: "Filtro de fecha de fin (published_at <= to)"
           example: "2026-07-29"
-        - name: titulo
+        - name: title
           in: query
           schema:
             type: string
             maxLength: 255
           description: Búsqueda por coincidencia parcial en el título
-        - name: id_canal
+        - name: channel_id
           in: query
           schema:
             type: integer
@@ -526,7 +532,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ComunicadosAdminPage'
+                $ref: '#/components/schemas/AdminAnnouncementsPage'
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -535,9 +541,9 @@ paths:
           $ref: '#/components/responses/Forbidden'
 
     post:
-      operationId: crearComunicado
+      operationId: createAnnouncement
       summary: Emitir un nuevo comunicado
-      tags: [Admin › Comunicados]
+      tags: [Admin > Announcements]
       security:
         - BearerAdmin: []
       description: |
@@ -547,21 +553,21 @@ paths:
         (CDU-AD05, RF-BRO-01).
 
         El body es `multipart/form-data` con dos partes:
-        - `datos`: JSON serializado con `ComunicadoDatos`.
-        - `imagen`: fichero binario opcional (≤ 5 MB, RF-ADM-06).
+        - `data`: JSON serializado con `AnnouncementData`.
+        - `image`: fichero binario opcional (≤ 5 MB, RF-ADM-06).
 
-        Debe incluirse al menos un destinatario en `ids_canales` o `ids_afiliados`
+        Debe incluirse al menos un destinatario en `channel_ids` o `affiliate_ids`
         (RF-ADM-05).
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ComunicadoFormRequest'
+              $ref: '#/components/schemas/AnnouncementFormRequest'
             encoding:
-              datos:
+              data:
                 contentType: application/json
-              imagen:
+              image:
                 contentType: image/*
       responses:
         "201":
@@ -569,22 +575,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ComunicadoAdmin'
+                $ref: '#/components/schemas/AdminAnnouncement'
               example:
                 id: 101
-                titulo: "Convocatoria asamblea"
-                cuerpo: "Se convoca asamblea el próximo lunes..."
-                fecha_hora_publicacion: "2026-07-29T09:00:00Z"
-                fecha_hora_ultima_edicion: null
-                eliminado: false
-                url_imagen: "https://storage.sidi.es/imagenes/abc123.jpg"
-                id_administrador: 1
-                destinatarios:
-                  tipo: canal
-                  canales:
+                title: "Convocatoria asamblea"
+                body: "Se convoca asamblea el próximo lunes..."
+                published_at: "2026-07-29T09:00:00Z"
+                last_edited_at: null
+                deleted: false
+                image_url: "https://storage.sidi.es/imagenes/abc123.jpg"
+                admin_id: 1
+                recipients:
+                  type: channel
+                  channels:
                     - id: 1
-                      nombre: "Funcionarios Maestros"
-                  num_afiliados_individuales: null
+                      name: "Funcionarios Maestros"
+                  individual_affiliate_count: null
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -592,15 +598,15 @@ paths:
         "403":
           $ref: '#/components/responses/Forbidden'
         "413":
-          $ref: '#/components/responses/ImagenDemasiadoGrande'
+          $ref: '#/components/responses/PayloadTooLarge'
 
-  /admin/comunicados/{id}:
+  /admin/announcements/{id}:
     parameters:
       - $ref: '#/components/parameters/IdPath'
     patch:
-      operationId: editarComunicado
+      operationId: editAnnouncement
       summary: Editar el contenido de un comunicado
-      tags: [Admin › Comunicados]
+      tags: [Admin > Announcements]
       security:
         - BearerAdmin: []
       description: |
@@ -610,20 +616,20 @@ paths:
         a los destinatarios originales (RF-ADM-09).
 
         El body es `multipart/form-data` con dos partes opcionales:
-        - `datos`: JSON serializado con `ComunicadoPatchDatos`.
-        - `imagen`: nuevo fichero de imagen (≤ 5 MB). Si se envía, reemplaza
+        - `data`: JSON serializado con `AnnouncementPatchData`.
+        - `image`: nuevo fichero de imagen (≤ 5 MB). Si se envía, reemplaza
           la imagen existente. Para eliminar la imagen sin reemplazarla, usar
-          `eliminar_imagen: true` en `datos`.
+          `delete_image: true` en `data`.
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ComunicadoFormPatchRequest'
+              $ref: '#/components/schemas/AnnouncementFormPatchRequest'
             encoding:
-              datos:
+              data:
                 contentType: application/json
-              imagen:
+              image:
                 contentType: image/*
       responses:
         "200":
@@ -631,7 +637,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ComunicadoAdmin'
+                $ref: '#/components/schemas/AdminAnnouncement'
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -641,16 +647,16 @@ paths:
         "404":
           $ref: '#/components/responses/NotFound'
         "413":
-          $ref: '#/components/responses/ImagenDemasiadoGrande'
+          $ref: '#/components/responses/PayloadTooLarge'
 
     delete:
-      operationId: eliminarComunicado
+      operationId: deleteAnnouncement
       summary: Eliminar un comunicado (borrado lógico)
-      tags: [Admin › Comunicados]
+      tags: [Admin > Announcements]
       security:
         - BearerAdmin: []
       description: |
-        Marca el comunicado como `eliminado = true`. Los dispositivos de los
+        Marca el comunicado como `deleted = true`. Los dispositivos de los
         afiliados lo retirarán de su caché local en la siguiente sincronización
         (RF-ADM-11, RF-BRO-07).
       responses:
@@ -663,18 +669,18 @@ paths:
         "404":
           $ref: '#/components/responses/NotFound'
 
-  # ── Móvil › Canales ───────────────────────────────────────────────────────
+  # ── Affiliates > Channels ─────────────────────────────────────────────────
 
-  /movil/canales:
+  /affiliates/channels:
     get:
-      operationId: listarCanalesMovil
+      operationId: listAffiliateChannels
       summary: Listar canales activos con estado de suscripción
-      tags: [Móvil › Canales]
+      tags: [Affiliates > Channels]
       security:
-        - BearerAfiliado: []
+        - BearerAffiliate: []
       description: |
-        Devuelve únicamente canales con `activo = true`, incluyendo el campo
-        `suscrito` específico para el afiliado autenticado (CDU-AF02).
+        Devuelve únicamente canales con `active = true`, incluyendo el campo
+        `subscribed` específico para el afiliado autenticado (CDU-AF02).
       responses:
         "200":
           description: Lista de canales activos
@@ -682,35 +688,41 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [canales]
+                required: [channels]
                 properties:
-                  canales:
+                  channels:
                     type: array
                     items:
-                      $ref: '#/components/schemas/CanalMovil'
+                      $ref: '#/components/schemas/AffiliateChannel'
               example:
-                canales:
+                channels:
                   - id: 1
-                    nombre: "Funcionarios Maestros"
-                    suscrito: true
+                    name: "Funcionarios Maestros"
+                    subscribed: true
                   - id: 2
-                    nombre: "Interinos Secundaria"
-                    suscrito: false
+                    name: "Interinos Secundaria"
+                    subscribed: false
         "401":
           $ref: '#/components/responses/Unauthorized'
 
-  /movil/canales/{id}/suscripcion:
+  /affiliates/me/subscriptions/{channel_id}:
     parameters:
-      - $ref: '#/components/parameters/IdPath'
+      - name: channel_id
+        in: path
+        required: true
+        description: Identificador numérico del canal
+        schema:
+          type: integer
+          minimum: 1
     post:
-      operationId: suscribirCanal
+      operationId: subscribeChannel
       summary: Suscribirse a un canal
-      tags: [Móvil › Canales]
+      tags: [Affiliates > Channels]
       security:
-        - BearerAfiliado: []
+        - BearerAffiliate: []
       description: |
         Crea o reactiva la suscripción del afiliado al canal (CDU-AF02).
-        El backend suscribe el `token_push` del dispositivo al `topic_fcm`
+        El backend suscribe el `push_token` del dispositivo al `fcm_topic`
         del canal en FCM.
 
         Rechaza con `409` si:
@@ -723,11 +735,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuscripcionResponse'
+                $ref: '#/components/schemas/SubscriptionResponse'
               example:
-                id_canal: 2
-                nombre_canal: "Interinos Secundaria"
-                fecha_suscripcion: "2026-07-29"
+                channel_id: 2
+                channel_name: "Interinos Secundaria"
+                subscribed_at: "2026-07-29"
         "401":
           $ref: '#/components/responses/Unauthorized'
         "404":
@@ -743,25 +755,25 @@ paths:
                   summary: Máximo de 2 canales simultáneos
                   value:
                     error:
-                      code: SUSCRIPCION_LIMITE_ALCANZADO
+                      code: SUBSCRIPTION_LIMIT_REACHED
                       message: "Ya estás suscrito al máximo de 2 canales permitidos"
                 cooldown_activo:
                   summary: Restricción temporal RF-SEG-02
                   value:
                     error:
-                      code: SUSCRIPCION_COOLDOWN
+                      code: SUBSCRIPTION_COOLDOWN
                       message: "Debes esperar hasta 2026-07-30T10:00:00Z para cambiar tu suscripción"
-                      permitido_desde: "2026-07-30T10:00:00Z"
+                      permitted_from: "2026-07-30T10:00:00Z"
 
     delete:
-      operationId: desuscribirCanal
+      operationId: unsubscribeChannel
       summary: Desuscribirse de un canal
-      tags: [Móvil › Canales]
+      tags: [Affiliates > Channels]
       security:
-        - BearerAfiliado: []
+        - BearerAffiliate: []
       description: |
-        Marca la suscripción como `activa = false` (CDU-AF02, flujo 4a).
-        El backend desuscribe el `token_push` del `topic_fcm` del canal en FCM.
+        Marca la suscripción como inactiva (CDU-AF02, flujo 4a).
+        El backend desuscribe el `push_token` del `fcm_topic` del canal en FCM.
         Rechaza con `409` si no han transcurrido 24 h desde el último cambio
         de suscripción (RF-SEG-02).
       responses:
@@ -779,38 +791,69 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 error:
-                  code: SUSCRIPCION_COOLDOWN
+                  code: SUBSCRIPTION_COOLDOWN
                   message: "Debes esperar hasta 2026-07-30T10:00:00Z para cambiar tu suscripción"
-                  permitido_desde: "2026-07-30T10:00:00Z"
+                  permitted_from: "2026-07-30T10:00:00Z"
 
-  # ── Móvil › Comunicados ───────────────────────────────────────────────────
+  # ── Affiliates > Profile ──────────────────────────────────────────────────
 
-  /movil/comunicados:
+  /affiliates/me:
     get:
-      operationId: sincronizarComunicados
-      summary: Sincronizar comunicados (delta sync)
-      tags: [Móvil › Comunicados]
+      operationId: getMyProfile
+      summary: Consultar perfil del afiliado
+      tags: [Affiliates > Profile]
       security:
-        - BearerAfiliado: []
+        - BearerAffiliate: []
+      description: |
+        Devuelve la información de perfil del afiliado autenticado, para 
+        permitir a la app recargar el estado del usuario de forma independiente
+        al login.
+      responses:
+        "200":
+          description: Perfil del afiliado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AffiliateProfile'
+              example:
+                id: 42
+                name: "Ana García López"
+                email: "affiliate@correo.es"
+                phone: "612345678"
+                active: true
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  # ── Affiliates > Announcements ────────────────────────────────────────────
+
+  /affiliates/announcements:
+    get:
+      operationId: syncAnnouncements
+      summary: Sincronizar comunicados (delta sync)
+      tags: [Affiliates > Announcements]
+      security:
+        - BearerAffiliate: []
       description: |
         Devuelve los comunicados relevantes para el afiliado autenticado,
         considerando tanto sus suscripciones a canales como su pertenencia a
         grupos de envío directo (CDU-AF03, RF-BRO-03, RF-BRO-04).
 
-        **Modo completo** (sin `desde`): comienza la descarga paginada del
+        **Modo completo** (sin `from`): comienza la descarga paginada del
         historial, en orden cronológico inverso.
 
-        **Modo delta** (con `desde`): devuelve únicamente:
-        - Comunicados nuevos o editados desde `desde` (`fecha_hora_publicacion`
-          o `fecha_hora_ultima_edicion > desde`).
-        - IDs de comunicados eliminados desde `desde` (`fecha_hora_eliminacion > desde`).
+        **Modo delta** (con `from`): devuelve únicamente:
+        - Comunicados nuevos o editados desde `from` (`published_at`
+          o `last_edited_at > from`).
+        - IDs de comunicados eliminados desde `from` (`deleted_at > from`).
 
         Cada respuesta contiene como máximo 50 comunicados (RNF-REN-03). Si
-        `hay_mas` es `true`, el cliente solicita la siguiente página enviando
-        únicamente `cursor`. Al terminar, guarda `timestamp_sync` y lo usa
-        como `desde` en la siguiente sincronización delta.
+        `has_more` es `true`, el cliente solicita la siguiente página enviando
+        únicamente `cursor`. Al terminar, guarda `sync_timestamp` y lo usa
+        como `from` en la siguiente sincronización delta.
       parameters:
-        - name: desde
+        - name: from
           in: query
           required: false
           schema:
@@ -826,8 +869,8 @@ paths:
           schema:
             type: string
           description: |
-            Cursor opaco devuelto en `siguiente_cursor`. Se usa para cargar la
-            siguiente página y no debe combinarse con `desde`.
+            Cursor opaco devuelto en `next_cursor`. Se usa para cargar la
+            siguiente página y no debe combinarse con `from`.
         - name: limit
           in: query
           schema:
@@ -842,36 +885,63 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SyncComunicadosResponse'
+                $ref: '#/components/schemas/SyncAnnouncementsResponse'
               example:
-                comunicados:
+                announcements:
                   - id: 101
-                    titulo: "Convocatoria asamblea"
-                    cuerpo: "Se convoca asamblea el próximo lunes..."
-                    fecha_hora_publicacion: "2026-07-29T09:00:00Z"
-                    fecha_hora_ultima_edicion: null
-                    url_imagen: "https://storage.sidi.es/imagenes/abc123.jpg"
-                    canales_origen: ["Funcionarios Maestros"]
-                eliminados: [47, 52]
-                timestamp_sync: "2026-07-29T10:15:00Z"
-                hay_mas: false
-                siguiente_cursor: null
+                    title: "Convocatoria asamblea"
+                    body: "Se convoca asamblea el próximo lunes..."
+                    published_at: "2026-07-29T09:00:00Z"
+                    last_edited_at: null
+                    image_url: "https://storage.sidi.es/imagenes/abc123.jpg"
+                    source_channels: ["Funcionarios Maestros"]
+                deleted: [47, 52]
+                sync_timestamp: "2026-07-29T10:15:00Z"
+                has_more: false
+                next_cursor: null
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
           $ref: '#/components/responses/Unauthorized'
 
-  # ── Móvil › Dispositivo ───────────────────────────────────────────────────
-
-  /movil/dispositivo/token:
-    patch:
-      operationId: actualizarTokenPush
-      summary: Actualizar token FCM del dispositivo
-      tags: [Móvil › Dispositivo]
+  /affiliates/announcements/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      operationId: getAnnouncement
+      summary: Consultar un comunicado individual (Deep Link)
+      tags: [Affiliates > Announcements]
       security:
-        - BearerAfiliado: []
+        - BearerAffiliate: []
       description: |
-        Actualiza el `token_push` cuando el proveedor FCM lo rota.
+        Devuelve el detalle completo de un comunicado específico por su ID.
+        Útil para responder rápidamente a notificaciones Push (Deep Linking)
+        sin necesidad de realizar una sincronización completa.
+      responses:
+        "200":
+          description: Detalle del comunicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AffiliateAnnouncement'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  # ── Affiliates > Devices ──────────────────────────────────────────────────
+
+  /affiliates/me/devices/current/token:
+    patch:
+      operationId: updatePushToken
+      summary: Actualizar token FCM del dispositivo actual
+      tags: [Affiliates > Devices]
+      security:
+        - BearerAffiliate: []
+      description: |
+        Actualiza el `push_token` cuando el proveedor FCM lo rota.
         El backend actualiza también las suscripciones de topic activas con
         el nuevo token (desuscribe el token antiguo y suscribe el nuevo).
       requestBody:
@@ -880,14 +950,14 @@ paths:
           application/json:
             schema:
               type: object
-              required: [token_push]
+              required: [push_token]
               properties:
-                token_push:
+                push_token:
                   type: string
                   maxLength: 500
                   description: Nuevo token FCM del dispositivo
             example:
-              token_push: "nuevo_fcm_token_xyz789abc"
+              push_token: "nuevo_fcm_token_xyz789abc"
       responses:
         "204":
           description: Token actualizado
@@ -908,12 +978,12 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: "JWT con claim 'rol: admin', emitido por POST /auth/admin/sesion"
-    BearerAfiliado:
+      description: "JWT con claim 'role: admin', emitido por POST /admin/sessions"
+    BearerAffiliate:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: "JWT con claim 'rol: afiliado', emitido por POST /auth/movil/sesion"
+      description: "JWT con claim 'role: affiliate', emitido por POST /affiliates/sessions"
 
   # ── Parameters ────────────────────────────────────────────────────────────
 
@@ -939,7 +1009,7 @@ components:
           example:
             error:
               code: VALIDATION_ERROR
-              message: "El campo 'titulo' es obligatorio"
+              message: "El campo 'title' es obligatorio"
 
     Unauthorized:
       description: Token ausente, expirado o inválido
@@ -974,7 +1044,7 @@ components:
               code: NOT_FOUND
               message: "El recurso solicitado no existe"
 
-    CredencialesInvalidas:
+    InvalidCredentials:
       description: |
         Credenciales incorrectas, cuenta inexistente o inactiva.
         El mensaje es siempre genérico para no revelar qué campo falló.
@@ -987,7 +1057,7 @@ components:
               code: INVALID_CREDENTIALS
               message: "Las credenciales introducidas no son válidas"
 
-    CuentaBloqueada:
+    AccountLocked:
       description: Cuenta bloqueada temporalmente por exceso de intentos fallidos
       content:
         application/json:
@@ -997,9 +1067,9 @@ components:
             error:
               code: ACCOUNT_LOCKED
               message: "Cuenta suspendida por seguridad hasta 2026-07-30T10:00:00Z"
-              bloqueado_hasta: "2026-07-30T10:00:00Z"
+              locked_until: "2026-07-30T10:00:00Z"
 
-    ImagenDemasiadoGrande:
+    PayloadTooLarge:
       description: La imagen adjunta supera el límite de 5 MB (RF-ADM-06)
       content:
         application/json:
@@ -1034,11 +1104,11 @@ components:
           additionalProperties: true
           description: |
             Pueden incluirse propiedades adicionales según el tipo de error,
-            como `bloqueado_hasta` o `permitido_desde`.
+            como `locked_until` o `permitted_from`.
 
-    Paginacion:
+    PaginationInfo:
       type: object
-      required: [page, limit, total, total_paginas]
+      required: [page, limit, total, total_pages]
       properties:
         page:
           type: integer
@@ -1050,34 +1120,34 @@ components:
           type: integer
           minimum: 0
           description: Total de registros encontrados con los filtros aplicados
-        total_paginas:
+        total_pages:
           type: integer
           minimum: 0
 
     # ── Auth ─────────────────────────────────────────────────────────────────
 
-    LoginAdminRequest:
+    AdminLoginRequest:
       type: object
-      required: [correo_electronico, contrasena]
+      required: [email, password]
       properties:
-        correo_electronico:
+        email:
           type: string
           format: email
           maxLength: 255
-        contrasena:
+        password:
           type: string
           format: password
           minLength: 8
 
-    LoginMovilRequest:
+    AffiliateLoginRequest:
       type: object
-      required: [telefono, correo_electronico, device_uuid]
+      required: [phone, email, device_uuid]
       properties:
-        telefono:
+        phone:
           type: string
           maxLength: 20
           description: Número de teléfono del afiliado (credencial)
-        correo_electronico:
+        email:
           type: string
           format: email
           maxLength: 255
@@ -1088,16 +1158,16 @@ components:
           description: |
             Identificador único de hardware del dispositivo móvil (CDU-AF01, paso 4).
             Se usa para aplicar la regla de carencia de 48 h (RF-AUTH-05).
-        token_push:
+        push_token:
           type: string
           maxLength: 500
           description: |
             Token FCM actual del dispositivo. Opcional si el dispositivo aún
             no tiene token disponible.
 
-    SesionResponse:
+    SessionResponse:
       type: object
-      required: [access_token, token_type, expira_en]
+      required: [access_token, token_type, expires_in]
       properties:
         access_token:
           type: string
@@ -1105,90 +1175,106 @@ components:
         token_type:
           type: string
           enum: [bearer]
-        expira_en:
+        expires_in:
           type: integer
           description: Segundos hasta la expiración del token
           example: 900
 
-    SesionMovilResponse:
+    AffiliateSessionResponse:
       allOf:
-        - $ref: '#/components/schemas/SesionResponse'
+        - $ref: '#/components/schemas/SessionResponse'
         - type: object
           properties:
-            afiliado:
-              $ref: '#/components/schemas/AfiliadoResumen'
+            affiliate:
+              $ref: '#/components/schemas/AffiliateSummary'
 
-    AfiliadoResumen:
+    AffiliateSummary:
       type: object
-      required: [id, nombre, correo_electronico]
+      required: [id, name, email]
       properties:
         id:
           type: integer
-        nombre:
+        name:
           type: string
-        correo_electronico:
+        email:
           type: string
           format: email
 
-    AfiliadoBusqueda:
+    AffiliateProfile:
       type: object
-      required: [id, nif, nombre, telefono]
+      required: [id, name, email, phone, active]
       properties:
         id:
           type: integer
-        nif:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        active:
+          type: boolean
+
+    AffiliateSearchEntry:
+      type: object
+      required: [id, id_document, name, phone]
+      properties:
+        id:
+          type: integer
+        id_document:
           type: string
           maxLength: 20
-        nombre:
+        name:
           type: string
           maxLength: 255
-        telefono:
+        phone:
           type: string
           maxLength: 20
 
-    AfiliadosBusquedaPage:
+    AffiliateSearchPage:
       type: object
-      required: [afiliados, paginacion]
+      required: [affiliates, pagination]
       properties:
-        afiliados:
+        affiliates:
           type: array
           items:
-            $ref: '#/components/schemas/AfiliadoBusqueda'
-        paginacion:
-          $ref: '#/components/schemas/Paginacion'
+            $ref: '#/components/schemas/AffiliateSearchEntry'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
 
     # ── Dashboard ─────────────────────────────────────────────────────────────
 
     DashboardResponse:
       type: object
-      required: [total_7d, desglose_diario]
+      required: [total_7d, daily_breakdown]
       properties:
         total_7d:
           type: integer
           minimum: 0
           description: Total de comunicados publicados en los últimos 7 días naturales
-        desglose_diario:
+        daily_breakdown:
           type: array
           description: Un elemento por día, con el desglose por canal para la gráfica
           items:
-            $ref: '#/components/schemas/DesglosesDia'
+            $ref: '#/components/schemas/DailyBreakdown'
 
-    DesglosesDia:
+    DailyBreakdown:
       type: object
-      required: [fecha, canales]
+      required: [date, channels]
       properties:
-        fecha:
+        date:
           type: string
           format: date
-        canales:
+        channels:
           type: array
           items:
             type: object
-            required: [id_canal, nombre_canal, total]
+            required: [channel_id, channel_name, total]
             properties:
-              id_canal:
+              channel_id:
                 type: integer
-              nombre_canal:
+              channel_name:
                 type: string
               total:
                 type: integer
@@ -1196,172 +1282,172 @@ components:
 
     # ── Importación ───────────────────────────────────────────────────────────
 
-    ResultadoImportacion:
+    ImportResult:
       type: object
-      required: [altas, actualizaciones, bajas]
+      required: [created, updated, deleted]
       properties:
-        altas:
+        created:
           type: integer
           minimum: 0
-        actualizaciones:
+        updated:
           type: integer
           minimum: 0
-        bajas:
+        deleted:
           type: integer
           minimum: 0
 
     # ── Canal ─────────────────────────────────────────────────────────────────
 
-    Canal:
+    Channel:
       type: object
-      required: [id, nombre, topic_fcm, activo]
+      required: [id, name, fcm_topic, active]
       properties:
         id:
           type: integer
-        nombre:
+        name:
           type: string
           maxLength: 100
-        topic_fcm:
+        fcm_topic:
           type: string
           maxLength: 100
           description: "Identificador de topic FCM (alfanumérico, guiones, guiones bajos)"
-        activo:
+        active:
           type: boolean
 
-    CanalMovil:
+    AffiliateChannel:
       type: object
-      required: [id, nombre, suscrito]
+      required: [id, name, subscribed]
       properties:
         id:
           type: integer
-        nombre:
+        name:
           type: string
-        suscrito:
+        subscribed:
           type: boolean
           description: "Indica si el afiliado autenticado está suscrito a este canal"
 
-    CanalCreateRequest:
+    ChannelCreateRequest:
       type: object
-      required: [nombre]
+      required: [name]
       properties:
-        nombre:
+        name:
           type: string
           minLength: 1
           maxLength: 100
 
-    SuscripcionResponse:
+    SubscriptionResponse:
       type: object
-      required: [id_canal, nombre_canal, fecha_suscripcion]
+      required: [channel_id, channel_name, subscribed_at]
       properties:
-        id_canal:
+        channel_id:
           type: integer
-        nombre_canal:
+        channel_name:
           type: string
-        fecha_suscripcion:
+        subscribed_at:
           type: string
           format: date
 
     # ── Comunicado ────────────────────────────────────────────────────────────
 
-    ComunicadoAdmin:
+    AdminAnnouncement:
       type: object
-      required: [id, titulo, cuerpo, fecha_hora_publicacion, eliminado, id_administrador, destinatarios]
+      required: [id, title, body, published_at, deleted, admin_id, recipients]
       properties:
         id:
           type: integer
-        titulo:
+        title:
           type: string
-        cuerpo:
+        body:
           type: string
-        fecha_hora_publicacion:
+        published_at:
           type: string
           format: date-time
-        fecha_hora_ultima_edicion:
+        last_edited_at:
           type: [string, "null"]
           format: date-time
-        eliminado:
+        deleted:
           type: boolean
-        url_imagen:
+        image_url:
           type: [string, "null"]
           format: uri
-        id_administrador:
+        admin_id:
           type: integer
-        destinatarios:
-          $ref: '#/components/schemas/DestinatariosResumen'
+        recipients:
+          $ref: '#/components/schemas/RecipientsSummary'
 
-    DestinatariosResumen:
+    RecipientsSummary:
       type: object
-      required: [tipo]
+      required: [type]
       description: |
         Resumen de destinatarios para el historial (RF-ADM-12).
-        El `tipo` se deriva por consulta según la presencia de filas en
+        El `type` se deriva por consulta según la presencia de filas en
         `COMUNICADO_CANAL` y/o `COMUNICADO_AFILIADO`.
       properties:
-        tipo:
+        type:
           type: string
-          enum: [canal, grupo_personalizado, mixto]
-        canales:
+          enum: [channel, custom_group, mixed]
+        channels:
           type: [array, "null"]
           items:
             type: object
-            required: [id, nombre]
+            required: [id, name]
             properties:
               id:
                 type: integer
-              nombre:
+              name:
                 type: string
-        num_afiliados_individuales:
+        individual_affiliate_count:
           type: [integer, "null"]
           description: |
-            Número de afiliados individuales. Presente cuando `tipo` es
-            `grupo_personalizado` o `mixto`.
+            Número de afiliados individuales. Presente cuando `type` es
+            `custom_group` o `mixed`.
 
-    ComunicadosAdminPage:
+    AdminAnnouncementsPage:
       type: object
-      required: [comunicados, paginacion]
+      required: [announcements, pagination]
       properties:
-        comunicados:
+        announcements:
           type: array
           items:
-            $ref: '#/components/schemas/ComunicadoAdmin'
-        paginacion:
-          $ref: '#/components/schemas/Paginacion'
+            $ref: '#/components/schemas/AdminAnnouncement'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
 
-    ComunicadoFormRequest:
+    AnnouncementFormRequest:
       type: object
-      required: [datos]
+      required: [data]
       properties:
-        datos:
-          $ref: '#/components/schemas/ComunicadoDatos'
-        imagen:
+        data:
+          $ref: '#/components/schemas/AnnouncementData'
+        image:
           type: string
           format: binary
           description: Fichero de imagen. Máximo 5 MB (RF-ADM-06).
 
-    ComunicadoDatos:
+    AnnouncementData:
       type: object
-      required: [titulo, cuerpo]
+      required: [title, body]
       anyOf:
-        - required: [ids_canales]
-        - required: [ids_afiliados]
+        - required: [channel_ids]
+        - required: [affiliate_ids]
       description: |
-        Debe incluir al menos `ids_canales` o `ids_afiliados` (RF-ADM-05).
+        Debe incluir al menos `channel_ids` o `affiliate_ids` (RF-ADM-05).
       properties:
-        titulo:
+        title:
           type: string
           minLength: 1
           maxLength: 255
-        cuerpo:
+        body:
           type: string
           minLength: 1
-        ids_canales:
+        channel_ids:
           type: [array, "null"]
           items:
             type: integer
           minItems: 1
           uniqueItems: true
           description: IDs de los canales destinatarios.
-        ids_afiliados:
+        affiliate_ids:
           type: [array, "null"]
           items:
             type: integer
@@ -1369,53 +1455,53 @@ components:
           uniqueItems: true
           description: IDs de afiliados individuales destinatarios (grupo personalizado)
 
-    ComunicadoFormPatchRequest:
+    AnnouncementFormPatchRequest:
       type: object
       properties:
-        datos:
-          $ref: '#/components/schemas/ComunicadoPatchDatos'
-        imagen:
+        data:
+          $ref: '#/components/schemas/AnnouncementPatchData'
+        image:
           type: string
           format: binary
           description: |
             Nueva imagen. Si se envía, reemplaza la existente. Máximo 5 MB.
 
-    ComunicadoPatchDatos:
+    AnnouncementPatchData:
       type: object
       description: Todos los campos son opcionales; solo se actualiza lo enviado.
       properties:
-        titulo:
+        title:
           type: string
           minLength: 1
           maxLength: 255
-        cuerpo:
+        body:
           type: string
           minLength: 1
-        eliminar_imagen:
+        delete_image:
           type: boolean
           default: false
           description: Si `true`, elimina la imagen adjunta sin reemplazarla.
 
-    ComunicadoMovil:
+    AffiliateAnnouncement:
       type: object
-      required: [id, titulo, cuerpo, fecha_hora_publicacion]
+      required: [id, title, body, published_at]
       properties:
         id:
           type: integer
-        titulo:
+        title:
           type: string
-        cuerpo:
+        body:
           type: string
-        fecha_hora_publicacion:
+        published_at:
           type: string
           format: date-time
-        fecha_hora_ultima_edicion:
+        last_edited_at:
           type: [string, "null"]
           format: date-time
-        url_imagen:
+        image_url:
           type: [string, "null"]
           format: uri
-        canales_origen:
+        source_channels:
           type: [array, "null"]
           items:
             type: string
@@ -1423,16 +1509,16 @@ components:
             Canales por los que llegó este comunicado. `null` si llegó
             únicamente por envío directo individual.
 
-    SyncComunicadosResponse:
+    SyncAnnouncementsResponse:
       type: object
-      required: [comunicados, eliminados, timestamp_sync, hay_mas, siguiente_cursor]
+      required: [announcements, deleted, sync_timestamp, has_more, next_cursor]
       properties:
-        comunicados:
+        announcements:
           type: array
           description: Comunicados nuevos o editados desde la última sync
           items:
-            $ref: '#/components/schemas/ComunicadoMovil'
-        eliminados:
+            $ref: '#/components/schemas/AffiliateAnnouncement'
+        deleted:
           type: array
           description: |
             IDs de comunicados que han sido eliminados desde la última sync.
@@ -1440,15 +1526,15 @@ components:
           items:
             type: integer
           example: [12, 47]
-        timestamp_sync:
+        sync_timestamp:
           type: string
           format: date-time
           description: |
             Timestamp del servidor en el momento de la consulta.
-            El cliente debe guardarlo y usarlo como `desde` en la próxima sync.
-        hay_mas:
+            El cliente debe guardarlo y usarlo como `from` en la próxima sync.
+        has_more:
           type: boolean
           description: Indica si quedan más comunicados en esta sincronización
-        siguiente_cursor:
+        next_cursor:
           type: [string, "null"]
           description: Cursor para la página siguiente; `null` si no hay más

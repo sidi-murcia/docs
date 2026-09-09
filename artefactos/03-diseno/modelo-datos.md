@@ -173,15 +173,15 @@ erDiagram
 ### 3.5 `CANAL`
 
 > Origen: clase conceptual `Canal`. Regla: clase → tabla.  
-> `topic_fcm` almacena el identificador de topic FCM asociado al canal, desacoplado del `nombre` que puede contener caracteres inválidos para FCM.  
-> Borrado lógico (`activo`): permite eliminar canales sin perder las referencias en `COMUNICADO_CANAL`, preservando la integridad del historial (CDU-AD06). Al pasar a `activo = FALSE` se eliminan en cascada las filas activas de `SUSCRIPCION`.
+> `topic_fcm` almacena el identificador de topic FCM generado aleatoriamente para el canal, desacoplado del `nombre` para evitar colisiones y permitir su renombrado libre sin mutar la infraestructura de notificaciones.  
+> Desactivación lógica (`activo`): permite desactivar canales sin perder las referencias en `COMUNICADO_CANAL`, preservando la integridad del historial (CDU-AD06). Al pasar a `activo = FALSE` se cancelan (desactivan) en cascada las filas activas de `SUSCRIPCION`. Un canal desactivado puede reactivarse pasando a `activo = TRUE`.
 
 | Columna | Tipo | Restricciones | Descripción |
 | --- | --- | --- | --- |
 | `id` | `INT` | PK, AUTO_INCREMENT | Clave primaria surrogate |
 | `nombre` | `VARCHAR(100)` | NOT NULL, UNIQUE | Nombre del canal |
-| `topic_fcm` | `VARCHAR(100)` | NOT NULL, UNIQUE | Identificador de topic FCM (caracteres alfanuméricos, guiones y guiones bajos) |
-| `activo` | `BOOLEAN` | NOT NULL, DEFAULT TRUE | FALSE cuando el canal ha sido eliminado (borrado lógico) |
+| `topic_fcm` | `VARCHAR(100)` | NOT NULL, UNIQUE | Identificador de topic FCM aleatorio único (caracteres alfanuméricos, guiones y guiones bajos) |
+| `activo` | `BOOLEAN` | NOT NULL, DEFAULT TRUE | FALSE cuando el canal ha sido desactivado |
 
 ---
 

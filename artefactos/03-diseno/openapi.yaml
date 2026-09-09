@@ -373,8 +373,8 @@ paths:
       security:
         - BearerAdmin: []
       description: |
-        Crea el canal y genera automáticamente su `fcm_topic` (nombre
-        normalizado: minúsculas, tildes eliminadas, espacios → `_`).
+        Crea el canal y genera automáticamente un identificador de `fcm_topic`
+        aleatorio y único (desacoplado del nombre del canal para prevenir colisiones).
       requestBody:
         required: true
         content:
@@ -393,7 +393,7 @@ paths:
               example:
                 id: 8
                 name: "Equipos Directivos Primaria"
-                fcm_topic: "equipos_directivos_primaria"
+                fcm_topic: "canal_f47ac10b-58cc-4372-a567-0e02b2c3d479"
                 active: true
         "400":
           $ref: '#/components/responses/BadRequest'
@@ -455,24 +455,74 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
     delete:
-      operationId: deleteChannel
-      summary: Eliminar un canal (borrado lógico)
+      operationId: deactivateChannel
+      summary: Desactivar un canal
       tags: [Admin > Channels]
       security:
         - BearerAdmin: []
       description: |
         Marca el canal como `active = false` y cancela en cascada todas las
         suscripciones activas de afiliados, desuscribiendo sus tokens FCM del
-        topic correspondiente (CDU-AD04, flujo 3c).
+        topic correspondiente en segundo plano (CDU-AD04, flujo 3c).
       responses:
         "204":
-          description: Canal eliminado
+          description: Canal desactivado
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
           $ref: '#/components/responses/Forbidden'
         "404":
           $ref: '#/components/responses/NotFound'
+        "409":
+          description: El canal ya se encuentra desactivado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: CHANNEL_ALREADY_INACTIVE
+                  message: "El canal ya se encuentra desactivado"
+
+  /admin/channels/{id}/activate:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    post:
+      operationId: activateChannel
+      summary: Activar un canal previamente desactivado
+      tags: [Admin > Channels]
+      security:
+        - BearerAdmin: []
+      description: |
+        Reactiva un canal que se encontraba inactivo (`active = false`),
+        pasando su estado a `active = true` (CDU-AD04, flujo 3d).
+        Las suscripciones de afiliados previamente canceladas no se reactivan
+        automáticamente; los afiliados deberán volver a suscribirse.
+      responses:
+        "200":
+          description: Canal activado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Channel'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          description: El canal ya se encuentra activo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: CHANNEL_ALREADY_ACTIVE
+                  message: "El canal ya se encuentra activo"
 
   # ── Admin > Announcements ─────────────────────────────────────────────────
 

@@ -181,35 +181,81 @@ paths:
 
   # ── Admin > Metrics ───────────────────────────────────────────────────────
 
-  /admin/metrics/announcements:
+  /admin/metrics/audience:
     get:
-      operationId: getAnnouncementMetrics
-      summary: Obtener métricas del dashboard de comunicados
+      operationId: getAudienceMetrics
+      summary: Obtener métricas actuales de audiencia (dispositivos y canales)
       tags: [Admin > Metrics]
       security:
         - BearerAdmin: []
       description: |
-        Devuelve el total de comunicados publicados en los últimos 7 días
-        naturales y el desglose diario por canal, calculados de forma dinámica
-        en el momento de la consulta (CDU-AD02, RF-ADM-03, RF-ADM-04).
+        Devuelve la fotografía actual del sistema: total de afiliados,
+        dispositivos activos (app instalada) y suscripciones activas por canal.
       responses:
         "200":
-          description: Métricas de los últimos 7 días
+          description: Métricas actuales de audiencia
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DashboardResponse'
+                $ref: '#/components/schemas/AudienceMetricsResponse'
               example:
-                total_7d: 14
+                total_affiliates: 5000
+                active_devices: 1200
+                channel_subscriptions:
+                  - channel_id: 1
+                    channel_name: "Funcionarios Maestros"
+                    total_subscribers: 800
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/metrics/announcements:
+    get:
+      operationId: getAnnouncementMetrics
+      summary: Obtener métricas del rendimiento de comunicados en un periodo
+      tags: [Admin > Metrics]
+      security:
+        - BearerAdmin: []
+      description: |
+        Devuelve el total de comunicados publicados en el periodo seleccionado,
+        las nuevas vinculaciones de dispositivos y el desglose de actividad
+        por canal (nuevas suscripciones, desuscripciones, comunicados enviados).
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Fecha de inicio del periodo. Por defecto hace 7 días.
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Fecha fin del periodo. Por defecto hoy.
+      responses:
+        "200":
+          description: Métricas del periodo seleccionado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodMetricsResponse'
+              example:
+                period_summary:
+                  total_announcements: 5
+                channel_performance:
+                  - channel_id: 1
+                    channel_name: "Funcionarios Maestros"
+                    announcements_sent: 3
+                    new_subscriptions: 15
+                    unsubscriptions: 2
                 daily_breakdown:
                   - date: "2026-07-28"
                     channels:
                       - channel_id: 1
                         channel_name: "Funcionarios Maestros"
                         total: 3
-                      - channel_id: 2
-                        channel_name: "Interinos Secundaria"
-                        total: 1
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
@@ -1295,17 +1341,58 @@ components:
 
     # ── Dashboard ─────────────────────────────────────────────────────────────
 
-    DashboardResponse:
+    AudienceMetricsResponse:
       type: object
-      required: [total_7d, daily_breakdown]
+      required: [total_affiliates, active_devices, channel_subscriptions]
       properties:
-        total_7d:
+        total_affiliates:
           type: integer
-          minimum: 0
-          description: Total de comunicados publicados en los últimos 7 días naturales
+          description: Censo total actual
+        active_devices:
+          type: integer
+          description: Total de afiliados con app instalada (token_push no nulo)
+        channel_subscriptions:
+          type: array
+          items:
+            type: object
+            required: [channel_id, channel_name, total_subscribers]
+            properties:
+              channel_id:
+                type: integer
+              channel_name:
+                type: string
+              total_subscribers:
+                type: integer
+
+    PeriodMetricsResponse:
+      type: object
+      required: [period_summary, channel_performance, daily_breakdown]
+      properties:
+        period_summary:
+          type: object
+          required: [total_announcements]
+          properties:
+            total_announcements:
+              type: integer
+              description: Total de comunicados publicados en el periodo
+        channel_performance:
+          type: array
+          items:
+            type: object
+            required: [channel_id, channel_name, announcements_sent, new_subscriptions, unsubscriptions]
+            properties:
+              channel_id:
+                type: integer
+              channel_name:
+                type: string
+              announcements_sent:
+                type: integer
+              new_subscriptions:
+                type: integer
+              unsubscriptions:
+                type: integer
         daily_breakdown:
           type: array
-          description: Un elemento por día, con el desglose por canal para la gráfica
           items:
             $ref: '#/components/schemas/DailyBreakdown'
 

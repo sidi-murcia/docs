@@ -16,9 +16,8 @@
 1. El Administrador selecciona la opción "Cerrar sesión" disponible en el Menú de Navegación del panel web.
 2. El Sistema presenta un cuadro de diálogo solicitando confirmación para finalizar la sesión.
 3. El Administrador confirma la acción.
-4. El Sistema se comunica con el Backend para invalidar el token de autorización de la sesión actual.
-5. El Sistema elimina de forma segura los tokens de acceso y cualquier dato sensible almacenado en la memoria local del navegador web (Local Storage / Session Storage / Cookies).
-6. El Sistema actualiza la interfaz, bloquea el acceso a las vistas de administración y redirige al Administrador a la pantalla de autenticación (CU-AD01).
+4. El Sistema elimina de forma segura los tokens de acceso y cualquier dato sensible almacenado en la memoria local del navegador web (Local Storage / Session Storage / Cookies). No se realiza ninguna llamada al backend dado que la autenticación es sin estado (stateless).
+5. El Sistema actualiza la interfaz, bloquea el acceso a las vistas de administración y redirige al Administrador a la pantalla de autenticación (CU-AD01).
 
 ## Extensiones (Flujos Alternativos)
 

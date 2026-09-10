@@ -18,9 +18,9 @@
 1. El Afiliado selecciona la opción "Cerrar sesión" en el menú de la aplicación.
 2. El Sistema presenta un cuadro de diálogo solicitando confirmación.
 3. El Afiliado confirma que desea cerrar la sesión.
-4. El Sistema invoca al servicio de notificaciones (Firebase) para invalidar el token de recepción en el dispositivo.
-5. El Sistema elimina de forma segura el token de autenticación (JWT) y la caché local de comunicados descargados.
-6. El Sistema actualiza la interfaz y redirige al Afiliado a la pantalla de autenticación (CU-A01).
+4. La aplicación invoca al servicio de notificaciones (Firebase SDK) para invalidar o eliminar el token de recepción en el dispositivo de forma local.
+5. La aplicación elimina de forma segura el token de autenticación (JWT) de su almacenamiento local y destruye la caché local de comunicados descargados (operación puramente local, sin realizar llamadas al backend).
+6. La aplicación actualiza la interfaz y redirige al Afiliado a la pantalla de autenticación (CU-A01).
 
 ## Extensiones (Flujos Alternativos)
 

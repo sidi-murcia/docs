@@ -83,22 +83,6 @@ paths:
         "423":
           $ref: '#/components/responses/AccountLocked'
 
-  /admin/sessions/current:
-    delete:
-      operationId: deleteAdminSession
-      summary: Cerrar sesión como administrador
-      tags: [Auth]
-      security:
-        - BearerAdmin: []
-      description: |
-        Invalida el token de sesión activo y limpia cualquier dato sensible
-        en caché del navegador (CDU-AD07).
-      responses:
-        "204":
-          description: Sesión cerrada correctamente
-        "401":
-          $ref: '#/components/responses/Unauthorized'
-
   # ── Affiliates > Sessions ─────────────────────────────────────────────────
 
   /affiliates/sessions:
@@ -161,23 +145,6 @@ paths:
                   permitted_from: "2026-07-31T10:00:00Z"
         "423":
           $ref: '#/components/responses/AccountLocked'
-
-  /affiliates/sessions/current:
-    delete:
-      operationId: deleteAffiliateSession
-      summary: Cerrar sesión desde la app móvil
-      tags: [Auth]
-      security:
-        - BearerAffiliate: []
-      description: |
-        Invalida el token JWT y cancela la suscripción local del dispositivo
-        a las notificaciones FCM (CDU-AF04). No elimina el `device_uuid` ni
-        el `push_token` del servidor (RF-AUTH-05: restricción de carencia).
-      responses:
-        "204":
-          description: Sesión cerrada
-        "401":
-          $ref: '#/components/responses/Unauthorized'
 
   # ── Admin > Metrics ───────────────────────────────────────────────────────
 

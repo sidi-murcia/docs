@@ -34,3 +34,13 @@ Antes de generar código en cualquier otro repositorio, debes consultar los sigu
 
 - Si durante la implementación en un repositorio de código encuentras una contradicción entre un Caso de Uso y el `openapi.yaml`, **detén la ejecución**.
 - Notifica al ingeniero (usuario) sobre la discrepancia referenciando ambos artefactos para que el conflicto se resuelva en el diseño antes de escribir el código.
+
+## 4. Estrategia Global de Versionado
+
+El ecosistema SIDI se compone de múltiples repositorios (`docs`, `backend`, `web`, `app`). El versionado se rige por las siguientes normas:
+
+1. **Independencia por Repositorio:** Cada repositorio mantiene su propia versión mediante **Semantic Versioning (SemVer: `vMayor.Menor.Parche`)** y Git Tags independientes.
+2. **Control del Contrato (API):**
+   - El contrato `openapi.yaml` es la única fuente de verdad.
+   - Las versiones mayores del `backend/` (`v2.x.x`) indican *breaking changes* en la API.
+   - Los clientes (`web/`, `app/`) documentarán en sus releases qué versión mínima del backend requieren.

@@ -34,3 +34,11 @@ Antes de generar código en cualquier otro repositorio, debes consultar los sigu
 
 - Si durante la implementación en un repositorio de código encuentras una contradicción entre un Caso de Uso y el `openapi.yaml`, **detén la ejecución**.
 - Notifica al ingeniero (usuario) sobre la discrepancia referenciando ambos artefactos para que el conflicto se resuelva en el diseño antes de escribir el código.
+
+## 4. Estrategia de Migraciones de Base de Datos
+
+El **backend** es el único "dueño" del esquema de la base de datos relacional.
+
+- **Herramienta:** El proyecto utiliza `golang-migrate/migrate` (con scripts en SQL puro) en lugar de herramientas basadas en JVM (como Liquibase).
+- **Ubicación:** Las migraciones viven físicamente en el repositorio del backend (ej. `backend/db/migrations/`).
+- **Flujo:** Ningún otro componente (ni la app, ni la web) debe acceder directamente a la base de datos ni intentar migrarla. Las migraciones se ejecutan durante el despliegue del backend.

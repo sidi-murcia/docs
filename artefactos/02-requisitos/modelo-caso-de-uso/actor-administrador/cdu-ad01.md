@@ -26,7 +26,7 @@
     1. El Sistema muestra un mensaje de error genérico en la interfaz indicando que las credenciales introducidas no coinciden con ningún administrador.
     2. El Sistema permite al Administrador introducir nuevas credenciales. El caso de uso retorna al paso 3 del flujo básico.
 
-* **4b. Credenciales incorrectas":**
+* **4b. Credenciales incorrectas:**
     1. El Sistema muestra un mensaje de error genérico en la interfaz indicando que las credenciales introducidas no coinciden con ningún administrador.
     2. El Sistema incrementa en uno el contador de intentos fallidos consecutivos de la cuenta.
     3. El Sistema permite al Administrador corregir los datos. El caso de uso retorna al paso 3 del flujo básico.

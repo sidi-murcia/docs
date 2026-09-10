@@ -96,7 +96,7 @@ No aplica.
 * **[RF-ADM-10]** El sistema debe permitir al administrador seleccionar afiliados individuales como destinatarios de un comunicado, mediante un buscador por nombre, NIF o teléfono, componiendo así un grupo de envío personalizado.
 * **[RF-ADM-11]** El sistema debe permitir la eliminación de un comunicado, haciendo que deje de estar disponible en los dispositivos de los afiliados.
 * **[RF-ADM-12]** El sistema debe identificar en el historial de comunicados si el envío fue dirigido a un canal o a un grupo personalizado de afiliados, mostrando en este último caso el número de destinatarios.
-* **[RF-ADM-13]** El Panel de Administración debe permitir al administrador crear nuevos canales y modificar el nombre de los canales existentes
+* **[RF-ADM-13]** El Panel de Administración debe permitir al administrador crear nuevos canales, modificar el nombre de los canales existentes, así como desactivarlos y reactivarlos.
 
 ## Requisitos de Rendimiento
 

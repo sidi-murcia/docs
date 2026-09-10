@@ -44,3 +44,11 @@ El ecosistema SIDI se compone de múltiples repositorios (`docs`, `backend`, `we
    - El contrato `openapi.yaml` es la única fuente de verdad.
    - Las versiones mayores del `backend/` (`v2.x.x`) indican *breaking changes* en la API.
    - Los clientes (`web/`, `app/`) documentarán en sus releases qué versión mínima del backend requieren.
+
+## 5. Estrategia de Migraciones de Base de Datos
+
+El **backend** es el único "dueño" del esquema de la base de datos relacional.
+
+- **Herramienta:** El proyecto utiliza `golang-migrate/migrate` (con scripts en SQL puro) en lugar de herramientas basadas en JVM (como Liquibase).
+- **Ubicación:** Las migraciones viven físicamente en el repositorio del backend (ej. `backend/db/migrations/`).
+- **Flujo:** Ningún otro componente (ni la app, ni la web) debe acceder directamente a la base de datos ni intentar migrarla. Las migraciones se ejecutan durante el despliegue del backend.

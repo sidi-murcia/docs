@@ -1305,6 +1305,17 @@ components:
             $ref: '#/components/schemas/AffiliateSearchEntry'
         pagination:
           $ref: '#/components/schemas/PaginationInfo'
+      example:
+        affiliates:
+          - id: 10
+            nif: "12345678A"
+            name: "Juan Perez"
+            phone: "600123456"
+        pagination:
+          total: 1
+          page: 1
+          limit: 20
+          total_pages: 1
 
     # ── Dashboard ─────────────────────────────────────────────────────────────
 
@@ -1417,6 +1428,11 @@ components:
           description: "Identificador de topic FCM (alfanumérico, guiones, guiones bajos)"
         active:
           type: boolean
+      example:
+        id: 1
+        name: "Equipos Directivos"
+        fcm_topic: "equipos_directivos"
+        active: true
 
     AffiliateChannel:
       type: object
@@ -1478,6 +1494,19 @@ components:
           type: integer
         recipients:
           $ref: '#/components/schemas/RecipientsSummary'
+      example:
+        id: 100
+        title: "Reunión de Equipos Directivos"
+        body: "Recordatorio de reunión"
+        published_at: "2026-09-10T10:00:00Z"
+        last_edited_at: null
+        deleted: false
+        image_url: "https://sidi-images.s3.amazonaws.com/100.jpg"
+        admin_id: 1
+        recipients:
+          type: "channel_only"
+          channel_ids: [1]
+          individual_count: 0
 
     RecipientsSummary:
       type: object
@@ -1516,6 +1545,25 @@ components:
             $ref: '#/components/schemas/AdminAnnouncement'
         pagination:
           $ref: '#/components/schemas/PaginationInfo'
+      example:
+        announcements:
+          - id: 100
+            title: "Reunión de Equipos Directivos"
+            body: "Recordatorio de reunión"
+            published_at: "2026-09-10T10:00:00Z"
+            last_edited_at: null
+            deleted: false
+            image_url: "https://sidi-images.s3.amazonaws.com/100.jpg"
+            admin_id: 1
+            recipients:
+              type: "channel_only"
+              channel_ids: [1]
+              individual_count: 0
+        pagination:
+          total: 1
+          page: 1
+          limit: 20
+          total_pages: 1
 
     AnnouncementFormRequest:
       type: object
@@ -1558,6 +1606,11 @@ components:
           minItems: 1
           uniqueItems: true
           description: IDs de afiliados individuales destinatarios (grupo personalizado)
+      example:
+        title: "Reunión de Equipos Directivos"
+        body: "Recordatorio de reunión"
+        channel_ids: [1]
+        affiliate_ids: null
 
     AnnouncementFormPatchRequest:
       type: object
@@ -1585,6 +1638,10 @@ components:
           type: boolean
           default: false
           description: Si `true`, elimina la imagen adjunta sin reemplazarla.
+      example:
+        title: "Reunión de Equipos Directivos"
+        body: "Actualización de la hora de reunión a las 11:00"
+        delete_image: false
 
     AffiliateAnnouncement:
       type: object
@@ -1612,6 +1669,14 @@ components:
           description: |
             Canales por los que llegó este comunicado. `null` si llegó
             únicamente por envío directo individual.
+      example:
+        id: 100
+        title: "Reunión de Equipos Directivos"
+        body: "Recordatorio de reunión"
+        published_at: "2026-09-10T10:00:00Z"
+        last_edited_at: null
+        image_url: "https://sidi-images.s3.amazonaws.com/100.jpg"
+        source_channels: ["Equipos Directivos"]
 
     SyncAnnouncementsResponse:
       type: object

@@ -17,8 +17,8 @@ info:
 servers:
   - url: https://api.sidi.es/api/v1
     description: Producción
-  - url: https://staging.api.sidi.es/api/v1
-    description: Staging / Preproducción
+  - url: https://api-staging.galdo.dev/api/v1
+    description: Staging / Preproducción (Homelab)
 
 tags:
   - name: Auth
@@ -44,7 +44,6 @@ tags:
 # PATHS
 # ---------------------------------------------------------------------------
 paths:
-
   # ── Admin > Sessions ──────────────────────────────────────────────────────
 
   /admin/sessions:
@@ -61,7 +60,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AdminLoginRequest'
+              $ref: "#/components/schemas/AdminLoginRequest"
             example:
               email: admin@sidi.es
               password: "SuperS3creta!"
@@ -71,17 +70,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionResponse'
+                $ref: "#/components/schemas/AdminSessionResponse"
               example:
                 access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 token_type: bearer
                 expires_in: 900
+                admin:
+                  id: 1
+                  name: "Super"
+                  lastName: "Admin"
+                  email: "admin@sidi.es"
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/InvalidCredentials'
+          $ref: "#/components/responses/InvalidCredentials"
         "423":
-          $ref: '#/components/responses/AccountLocked'
+          $ref: "#/components/responses/AccountLocked"
 
   # ── Affiliates > Sessions ─────────────────────────────────────────────────
 
@@ -105,7 +109,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AffiliateLoginRequest'
+              $ref: "#/components/schemas/AffiliateLoginRequest"
             example:
               phone: "612345678"
               email: affiliate@correo.es
@@ -117,19 +121,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AffiliateSessionResponse'
+                $ref: "#/components/schemas/AffiliateSessionResponse"
               example:
                 access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 token_type: bearer
                 expires_in: 900
                 affiliate:
                   id: 42
-                  name: "Ana García López"
+                  name: "Ana"
+                  lastName: "García López"
                   email: affiliate@correo.es
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/InvalidCredentials'
+          $ref: "#/components/responses/InvalidCredentials"
         "403":
           description: |
             Cambio de dispositivo denegado — el periodo de carencia de 48 h
@@ -137,14 +142,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error:
                   code: DEVICE_CHANGE_COOLDOWN
                   message: "No puedes vincular un nuevo dispositivo hasta 2026-07-31T10:00:00Z"
                   permitted_from: "2026-07-31T10:00:00Z"
         "423":
-          $ref: '#/components/responses/AccountLocked'
+          $ref: "#/components/responses/AccountLocked"
 
   # ── Admin > Metrics ───────────────────────────────────────────────────────
 
@@ -164,7 +169,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AudienceMetricsResponse'
+                $ref: "#/components/schemas/AudienceMetricsResponse"
               example:
                 total_affiliates: 5000
                 active_devices: 1200
@@ -173,9 +178,9 @@ paths:
                     channel_name: "Funcionarios Maestros"
                     total_subscribers: 800
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
 
   /admin/metrics/announcements:
     get:
@@ -207,7 +212,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PeriodMetricsResponse'
+                $ref: "#/components/schemas/PeriodMetricsResponse"
               example:
                 period_summary:
                   total_announcements: 5
@@ -224,9 +229,9 @@ paths:
                         channel_name: "Funcionarios Maestros"
                         total: 3
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
 
   # ── Admin > Affiliates ────────────────────────────────────────────────────
 
@@ -269,13 +274,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AffiliateSearchPage'
+                $ref: "#/components/schemas/AffiliateSearchPage"
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
 
   /admin/affiliates/imports:
     post:
@@ -312,7 +317,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ImportResult'
+                $ref: "#/components/schemas/ImportResult"
               example:
                 created: 12
                 updated: 5
@@ -322,7 +327,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 formato_invalido:
                   value:
@@ -335,9 +340,9 @@ paths:
                       code: MISSING_REQUIRED_COLUMNS
                       message: "Faltan columnas obligatorias: telefono, estado"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
 
   # ── Admin > Channels ──────────────────────────────────────────────────────
 
@@ -363,7 +368,7 @@ paths:
                   channels:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Channel'
+                      $ref: "#/components/schemas/Channel"
               example:
                 channels:
                   - id: 1
@@ -375,9 +380,9 @@ paths:
                     fcm_topic: "interinos_secundaria"
                     active: true
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
 
     post:
       operationId: createChannel
@@ -393,7 +398,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChannelCreateRequest'
+              $ref: "#/components/schemas/ChannelCreateRequest"
             example:
               name: "Equipos Directivos Primaria"
       responses:
@@ -402,24 +407,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Channel'
+                $ref: "#/components/schemas/Channel"
               example:
                 id: 8
                 name: "Equipos Directivos Primaria"
                 fcm_topic: "canal_f47ac10b-58cc-4372-a567-0e02b2c3d479"
                 active: true
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
         "409":
           description: Ya existe un canal con ese nombre
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error:
                   code: DUPLICATE_CHANNEL_NAME
@@ -427,7 +432,7 @@ paths:
 
   /admin/channels/{id}:
     parameters:
-      - $ref: '#/components/parameters/IdPath'
+      - $ref: "#/components/parameters/IdPath"
     patch:
       operationId: renameChannel
       summary: Renombrar un canal existente
@@ -442,7 +447,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChannelCreateRequest'
+              $ref: "#/components/schemas/ChannelCreateRequest"
             example:
               name: "Funcionarios Primaria (actualizado)"
       responses:
@@ -451,21 +456,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Channel'
+                $ref: "#/components/schemas/Channel"
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
         "404":
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
         "409":
           description: Nombre duplicado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
     delete:
       operationId: deactivateChannel
@@ -481,17 +486,17 @@ paths:
         "204":
           description: Canal desactivado
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
         "404":
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
         "409":
           description: El canal ya se encuentra desactivado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error:
                   code: CHANNEL_ALREADY_INACTIVE
@@ -499,7 +504,7 @@ paths:
 
   /admin/channels/{id}/activate:
     parameters:
-      - $ref: '#/components/parameters/IdPath'
+      - $ref: "#/components/parameters/IdPath"
     post:
       operationId: activateChannel
       summary: Activar un canal previamente desactivado
@@ -517,21 +522,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Channel'
+                $ref: "#/components/schemas/Channel"
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
         "404":
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
         "409":
           description: El canal ya se encuentra activo
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error:
                   code: CHANNEL_ALREADY_ACTIVE
@@ -595,13 +600,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminAnnouncementsPage'
+                $ref: "#/components/schemas/AdminAnnouncementsPage"
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
 
     post:
       operationId: createAnnouncement
@@ -626,7 +631,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/AnnouncementFormRequest'
+              $ref: "#/components/schemas/AnnouncementFormRequest"
             encoding:
               data:
                 contentType: application/json
@@ -638,7 +643,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminAnnouncement'
+                $ref: "#/components/schemas/AdminAnnouncement"
               example:
                 id: 101
                 title: "Convocatoria asamblea"
@@ -655,17 +660,17 @@ paths:
                       name: "Funcionarios Maestros"
                   individual_affiliate_count: null
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
         "413":
-          $ref: '#/components/responses/PayloadTooLarge'
+          $ref: "#/components/responses/PayloadTooLarge"
 
   /admin/announcements/{id}:
     parameters:
-      - $ref: '#/components/parameters/IdPath'
+      - $ref: "#/components/parameters/IdPath"
     patch:
       operationId: editAnnouncement
       summary: Editar el contenido de un comunicado
@@ -688,7 +693,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/AnnouncementFormPatchRequest'
+              $ref: "#/components/schemas/AnnouncementFormPatchRequest"
             encoding:
               data:
                 contentType: application/json
@@ -700,17 +705,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminAnnouncement'
+                $ref: "#/components/schemas/AdminAnnouncement"
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
         "404":
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
         "413":
-          $ref: '#/components/responses/PayloadTooLarge'
+          $ref: "#/components/responses/PayloadTooLarge"
 
     delete:
       operationId: deleteAnnouncement
@@ -726,11 +731,11 @@ paths:
         "204":
           description: Comunicado eliminado
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
         "404":
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
 
   # ── Affiliates > Channels ─────────────────────────────────────────────────
 
@@ -756,7 +761,7 @@ paths:
                   channels:
                     type: array
                     items:
-                      $ref: '#/components/schemas/AffiliateChannel'
+                      $ref: "#/components/schemas/AffiliateChannel"
               example:
                 channels:
                   - id: 1
@@ -766,7 +771,7 @@ paths:
                     name: "Interinos Secundaria"
                     subscribed: false
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
 
   /affiliates/me/subscriptions/{channel_id}:
     parameters:
@@ -798,21 +803,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubscriptionResponse'
+                $ref: "#/components/schemas/SubscriptionResponse"
               example:
                 channel_id: 2
                 channel_name: "Interinos Secundaria"
                 subscribed_at: "2026-07-29"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
         "409":
           description: Límite de suscripciones alcanzado o cooldown activo
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 limite_alcanzado:
                   summary: Máximo de 2 canales simultáneos
@@ -843,15 +848,15 @@ paths:
         "204":
           description: Suscripción cancelada
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
         "409":
           description: Cooldown activo (RF-SEG-02)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error:
                   code: SUBSCRIPTION_COOLDOWN
@@ -877,17 +882,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AffiliateProfile'
+                $ref: "#/components/schemas/AffiliateProfile"
               example:
                 id: 42
-                name: "Ana García López"
+                name: "Ana"
+                lastName: "García López"
                 email: "affiliate@correo.es"
                 phone: "612345678"
                 active: true
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
 
   # ── Affiliates > Announcements ────────────────────────────────────────────
 
@@ -948,7 +954,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SyncAnnouncementsResponse'
+                $ref: "#/components/schemas/SyncAnnouncementsResponse"
               example:
                 announcements:
                   - id: 101
@@ -963,13 +969,13 @@ paths:
                 has_more: false
                 next_cursor: null
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
 
   /affiliates/announcements/{id}:
     parameters:
-      - $ref: '#/components/parameters/IdPath'
+      - $ref: "#/components/parameters/IdPath"
     get:
       operationId: getAnnouncement
       summary: Consultar un comunicado individual (Deep Link)
@@ -986,13 +992,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AffiliateAnnouncement'
+                $ref: "#/components/schemas/AffiliateAnnouncement"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: '#/components/responses/Forbidden'
+          $ref: "#/components/responses/Forbidden"
         "404":
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
 
   # ── Affiliates > Devices ──────────────────────────────────────────────────
 
@@ -1025,15 +1031,14 @@ paths:
         "204":
           description: Token actualizado
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "401":
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
 
 # ---------------------------------------------------------------------------
 # COMPONENTS
 # ---------------------------------------------------------------------------
 components:
-
   # ── Security Schemes ──────────────────────────────────────────────────────
 
   securitySchemes:
@@ -1068,7 +1073,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
           example:
             error:
               code: VALIDATION_ERROR
@@ -1079,7 +1084,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
           example:
             error:
               code: UNAUTHORIZED
@@ -1090,7 +1095,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
           example:
             error:
               code: FORBIDDEN
@@ -1101,7 +1106,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
           example:
             error:
               code: NOT_FOUND
@@ -1114,7 +1119,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
           example:
             error:
               code: INVALID_CREDENTIALS
@@ -1125,7 +1130,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
           example:
             error:
               code: ACCOUNT_LOCKED
@@ -1137,7 +1142,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
           example:
             error:
               code: IMAGE_TOO_LARGE
@@ -1146,7 +1151,6 @@ components:
   # ── Schemas ───────────────────────────────────────────────────────────────
 
   schemas:
-
     # ── Genéricos ────────────────────────────────────────────────────────────
 
     ErrorResponse:
@@ -1245,19 +1249,38 @@ components:
 
     AffiliateSessionResponse:
       allOf:
-        - $ref: '#/components/schemas/SessionResponse'
+        - $ref: "#/components/schemas/SessionResponse"
         - type: object
           properties:
             affiliate:
-              $ref: '#/components/schemas/AffiliateSummary'
+              $ref: "#/components/schemas/AffiliateSummary"
+
+    AdminSessionResponse:
+      allOf:
+        - $ref: "#/components/schemas/SessionResponse"
+        - type: object
+          properties:
+            admin:
+              $ref: "#/components/schemas/AdminSummary"
+
+    AdminSummary:
+      type: object
+      required: [name, lastName]
+      properties:
+        name:
+          type: string
+        lastName:
+          type: string
 
     AffiliateSummary:
       type: object
-      required: [id, name, email]
+      required: [id, name, lastName, email]
       properties:
         id:
           type: integer
         name:
+          type: string
+        lastName:
           type: string
         email:
           type: string
@@ -1271,6 +1294,8 @@ components:
           type: integer
         name:
           type: string
+        lastName:
+          type: string
         email:
           type: string
           format: email
@@ -1281,7 +1306,7 @@ components:
 
     AffiliateSearchEntry:
       type: object
-      required: [id, id_document, name, phone]
+      required: [id, id_document, name, lastName, phone]
       properties:
         id:
           type: integer
@@ -1289,6 +1314,9 @@ components:
           type: string
           maxLength: 20
         name:
+          type: string
+          maxLength: 255
+        lastName:
           type: string
           maxLength: 255
         phone:
@@ -1302,14 +1330,15 @@ components:
         affiliates:
           type: array
           items:
-            $ref: '#/components/schemas/AffiliateSearchEntry'
+            $ref: "#/components/schemas/AffiliateSearchEntry"
         pagination:
-          $ref: '#/components/schemas/PaginationInfo'
+          $ref: "#/components/schemas/PaginationInfo"
       example:
         affiliates:
           - id: 10
-            nif: "12345678A"
-            name: "Juan Perez"
+            id_document: "12345678A"
+            name: "Juan"
+            lastName: "Pérez"
             phone: "600123456"
         pagination:
           total: 1
@@ -1357,7 +1386,14 @@ components:
           type: array
           items:
             type: object
-            required: [channel_id, channel_name, announcements_sent, new_subscriptions, unsubscriptions]
+            required:
+              [
+                channel_id,
+                channel_name,
+                announcements_sent,
+                new_subscriptions,
+                unsubscriptions,
+              ]
             properties:
               channel_id:
                 type: integer
@@ -1372,7 +1408,7 @@ components:
         daily_breakdown:
           type: array
           items:
-            $ref: '#/components/schemas/DailyBreakdown'
+            $ref: "#/components/schemas/DailyBreakdown"
 
     DailyBreakdown:
       type: object
@@ -1493,7 +1529,7 @@ components:
         admin_id:
           type: integer
         recipients:
-          $ref: '#/components/schemas/RecipientsSummary'
+          $ref: "#/components/schemas/RecipientsSummary"
       example:
         id: 100
         title: "Reunión de Equipos Directivos"
@@ -1542,9 +1578,9 @@ components:
         announcements:
           type: array
           items:
-            $ref: '#/components/schemas/AdminAnnouncement'
+            $ref: "#/components/schemas/AdminAnnouncement"
         pagination:
-          $ref: '#/components/schemas/PaginationInfo'
+          $ref: "#/components/schemas/PaginationInfo"
       example:
         announcements:
           - id: 100
@@ -1570,7 +1606,7 @@ components:
       required: [data]
       properties:
         data:
-          $ref: '#/components/schemas/AnnouncementData'
+          $ref: "#/components/schemas/AnnouncementData"
         image:
           type: string
           format: binary
@@ -1616,7 +1652,7 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/AnnouncementPatchData'
+          $ref: "#/components/schemas/AnnouncementPatchData"
         image:
           type: string
           format: binary
@@ -1686,7 +1722,7 @@ components:
           type: array
           description: Comunicados nuevos o editados desde la última sync
           items:
-            $ref: '#/components/schemas/AffiliateAnnouncement'
+            $ref: "#/components/schemas/AffiliateAnnouncement"
         deleted:
           type: array
           description: |

@@ -25,6 +25,8 @@ erDiagram
         int id PK
         varchar correo_electronico UK
         varchar contrasena_hash
+        varchar nombre
+        varchar apellidos
         int intentos_fallidos_consecutivos
         datetime fecha_hora_fin_bloqueo
     }
@@ -50,6 +52,7 @@ erDiagram
         int id PK
         varchar nif UK
         varchar nombre
+        varchar apellidos
         varchar telefono
         varchar correo_electronico UK
         varchar estado
@@ -115,6 +118,8 @@ erDiagram
 | `id` | `INT` | PK, AUTO_INCREMENT | Clave primaria surrogate |
 | `correo_electronico` | `VARCHAR(255)` | NOT NULL, UNIQUE | Identificador de acceso |
 | `contrasena_hash` | `VARCHAR(255)` | NOT NULL | Hash seguro de contraseña |
+| `nombre` | `VARCHAR(255)` | NOT NULL | Nombre del administrador |
+| `apellidos` | `VARCHAR(255)` | NOT NULL | Apellidos del administrador |
 | `intentos_fallidos_consecutivos` | `INT` | NOT NULL, DEFAULT 0 | Contador para bloqueo por intentos fallidos |
 | `fecha_hora_fin_bloqueo` | `DATETIME` | NULL | Fecha/hora hasta la que la cuenta está bloqueada |
 
@@ -128,7 +133,8 @@ erDiagram
 | --- | --- | --- | --- |
 | `id` | `INT` | PK, AUTO_INCREMENT | Clave primaria surrogate |
 | `nif` | `VARCHAR(20)` | NOT NULL, UNIQUE | Número de Identificación Fiscal |
-| `nombre` | `VARCHAR(255)` | NOT NULL | Nombre completo |
+| `nombre` | `VARCHAR(255)` | NOT NULL | Nombre (sin apellidos) |
+| `apellidos` | `VARCHAR(255)` | NOT NULL | Apellidos |
 | `telefono` | `VARCHAR(20)` | NOT NULL | Teléfono de credencial |
 | `correo_electronico` | `VARCHAR(255)` | NOT NULL, UNIQUE | Correo de credencial |
 | `estado` | `VARCHAR(10)` | NOT NULL, CHECK (`estado` IN ('activo','baja')) | Estado de la cuenta |
